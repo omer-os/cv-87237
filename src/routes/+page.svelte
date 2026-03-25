@@ -1,16 +1,16 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 
-	// ─── Placeholder data (replace via JSON editor or AI prompt) ─────────────────
+	// ─── Placeholder data — replace via "Copy AI Prompt" workflow ────────────────
 	const defaultCv = {
 		personal: {
 			fullName: 'Alex Johnson',
 			title: 'Senior Frontend Engineer',
-			email: 'alex.johnson@email.com',
+			email: 'alex@example.com',
 			phone: '+1 (415) 555-0192',
 			location: 'San Francisco, CA',
 			summary:
-				'Frontend engineer with 5+ years shipping production web apps at scale. Deep expertise in React, TypeScript, and modern build tooling. Passionate about performance, accessibility, and clean component architecture. Proven track record leading cross-functional delivery on B2B SaaS and consumer products.',
+				'Frontend engineer with 5 years shipping production web apps at scale. Deep expertise in React, TypeScript, and modern build tooling with a track record of reducing load times, leading component system migrations, and owning cross-functional delivery end-to-end.',
 			links: [
 				{ label: 'GitHub', url: 'github.com/alexjohnson' },
 				{ label: 'LinkedIn', url: 'linkedin.com/in/alexjohnson' }
@@ -22,9 +22,9 @@
 				title: 'Technical Skills',
 				type: 'skills',
 				items: [
-					{ category: 'Frontend', values: ['React', 'Next.js', 'TypeScript', 'SvelteKit', 'TailwindCSS', 'GraphQL'] },
-					{ category: 'Backend', values: ['Node.js', 'PostgreSQL', 'Redis', 'REST APIs', 'Prisma', 'Docker'] },
-					{ category: 'Tooling', values: ['Vite', 'Webpack', 'Git', 'GitHub Actions', 'AWS', 'Figma'] }
+					{ category: 'Frontend', values: ['React', 'Next.js', 'TypeScript', 'SvelteKit', 'TailwindCSS', 'Zustand', 'React Query'] },
+					{ category: 'Backend & Data', values: ['Node.js', 'PostgreSQL', 'Redis', 'Prisma', 'REST APIs', 'GraphQL'] },
+					{ category: 'Tooling', values: ['Vite', 'Webpack', 'Docker', 'GitHub Actions', 'AWS', 'Figma'] }
 				]
 			},
 			{
@@ -39,9 +39,9 @@
 						location: 'San Francisco, CA',
 						description: '',
 						details: [
-							'Led a 4-engineer team to rebuild the merchant dashboard in Next.js, reducing LCP by 52% and cutting customer support tickets by 30%',
-							'Architected a reusable component library (60+ components) adopted across 8 product teams, standardising design system tokens',
-							'Integrated real-time data pipelines using WebSockets and React Query, enabling live transaction monitoring for 200k+ merchants'
+							'Led rebuild of the merchant dashboard in Next.js App Router — reduced LCP by 52% and cut support tickets related to UI by 30%',
+							'Designed and shipped a 60-component library adopted across 8 product teams, eliminating duplicate UI work and standardising design tokens',
+							'Built real-time transaction monitoring with WebSockets + React Query serving 200k+ merchants; zero downtime migrations across 3 major releases'
 						]
 					},
 					{
@@ -51,9 +51,9 @@
 						location: 'Remote',
 						description: '',
 						details: [
-							'Built and shipped the collaborative editing toolbar, now used by 30M+ users, with conflict-free real-time sync',
-							'Migrated legacy class components to React Hooks and Context API, reducing bundle size by 18%',
-							'Owned end-to-end delivery of the mobile web experience, improving mobile retention by 22% in Q3 2021'
+							'Shipped the collaborative editing toolbar now used by 30M+ users; implemented conflict-free real-time sync with zero merge-loss bugs post-launch',
+							'Migrated legacy class components to Hooks + Context, shrinking bundle by 18% and improving TTI on low-end devices by 400ms',
+							'Owned the mobile web experience end-to-end — improved mobile retention 22% in Q3 2021 after redesigning navigation and scroll performance'
 						]
 					},
 					{
@@ -63,8 +63,8 @@
 						location: 'New York, NY',
 						description: '',
 						details: [
-							'Delivered 15+ client projects (e-commerce, marketing sites, internal tools) under tight deadlines with React and Vue',
-							'Introduced automated testing (Jest + Playwright) that cut regression bugs by 40% across the client portfolio'
+							'Delivered 15+ client projects (e-commerce, portals, admin tools) in React and Vue under fixed-price contracts with 100% on-time delivery rate',
+							'Introduced Jest + Playwright test coverage from 0% to 70%, reducing regression bugs by 40% across the entire client portfolio'
 						]
 					}
 				]
@@ -79,21 +79,19 @@
 						subtitle: 'github.com/alexjohnson/openmetrics',
 						date: '2023',
 						location: '',
-						description: 'Open-source analytics dashboard built with SvelteKit and ClickHouse. 1.4k GitHub stars.',
+						description: 'Self-hostable product analytics in SvelteKit + ClickHouse. 1.4k GitHub stars, featured in Hacker News top 10.',
 						details: [
-							'Handles 50M+ events/day with sub-second query latency via materialized views and aggressive caching',
-							'Self-hostable via a single Docker Compose command; featured in Hacker News top 10'
+							'Handles 50M+ events/day at sub-second query latency via materialized views and query caching',
+							'Single-command Docker Compose deploy — 300+ production installs within first month of release'
 						]
 					},
 					{
-						title: 'Taskflow',
+						title: 'Taskflow CLI',
 						subtitle: 'github.com/alexjohnson/taskflow',
 						date: '2022',
 						location: '',
-						description: 'CLI task manager in TypeScript with a local-first sync engine.',
-						details: [
-							'Implemented a CRDT-based sync layer; zero data loss across offline/online state transitions'
-						]
+						description: 'Local-first task manager in TypeScript with CRDT-based sync — zero data loss across offline/online transitions.',
+						details: []
 					}
 				]
 			},
@@ -130,6 +128,7 @@
 	let showEditor = $state(false);
 	let parseError = $state('');
 	let copied = $state(false);
+	let exporting = $state(false);
 
 	// ─── Handlers ─────────────────────────────────────────────────────────────────
 	function applyJson() {
@@ -153,147 +152,188 @@
 	}
 
 	async function exportPdf() {
-		if (!browser) return;
-		const html2pdf = (await import('html2pdf.js')).default;
-		const el = document.getElementById('cv-render');
-		if (!el) return;
-		html2pdf()
-			.set({
-				margin: 0,
-				filename: `${cv.personal.fullName.replace(/\s+/g, '_')}_CV.pdf`,
-				image: { type: 'jpeg', quality: 0.98 },
-				html2canvas: { scale: 2, useCORS: true },
-				jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-			})
-			.from(el)
-			.save();
+		if (!browser || exporting) return;
+		exporting = true;
+		const { default: html2pdf } = await import('html2pdf.js');
+		const el = document.getElementById('cv-render') as HTMLElement;
+		if (!el) { exporting = false; return; }
+
+		// Temporarily clamp to exact A4 height so html2pdf captures exactly one page
+		const prev = { h: el.style.height, oh: el.style.overflow, mh: el.style.minHeight };
+		el.style.height = '297mm';
+		el.style.minHeight = '0';
+		el.style.overflow = 'hidden';
+
+		try {
+			await html2pdf()
+				.set({
+					margin: 0,
+					filename: `${cv.personal.fullName.replace(/\s+/g, '_')}_CV.pdf`,
+					image: { type: 'jpeg', quality: 0.98 },
+					html2canvas: { scale: 2, useCORS: true, logging: false },
+					jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+				})
+				.from(el)
+				.save();
+		} finally {
+			el.style.height = prev.h;
+			el.style.minHeight = prev.mh;
+			el.style.overflow = prev.oh;
+			exporting = false;
+		}
 	}
 
 	async function copyPrompt() {
 		if (!browser) return;
+
 		const schema = `{
   "personal": {
-    "fullName": "string — full legal name",
-    "title": "string — job title / professional headline",
+    "fullName": "string",
+    "title": "string — concise job title / professional headline",
     "email": "string",
     "phone": "string",
     "location": "string — City, Country",
-    "summary": "string — 2-4 sentence professional summary, no first-person pronouns",
-    "links": [{ "label": "string e.g. GitHub", "url": "string — short URL without https://" }]
+    "summary": "string — 2-3 sentences, NO first-person pronouns, NO filler phrases like 'passionate about' or 'dynamic team player'. Start with role + years + core strength. Tailored to the target role.",
+    "links": [
+      { "label": "GitHub", "url": "github.com/username" },
+      { "label": "LinkedIn", "url": "linkedin.com/in/username" }
+    ]
   },
   "sections": [
     {
       "id": "skills",
       "title": "Technical Skills",
       "type": "skills",
-      "items": [{ "category": "string e.g. Frontend", "values": ["string array of tools/techs"] }]
+      "items": [
+        { "category": "Frontend", "values": ["React", "TypeScript", "..."] },
+        { "category": "Backend", "values": ["Node.js", "PostgreSQL", "..."] },
+        { "category": "Tooling", "values": ["Git", "Docker", "..."] }
+      ]
     },
     {
       "id": "experience",
       "title": "Work Experience",
       "type": "experience",
-      "items": [{
-        "title": "string — job title",
-        "subtitle": "string — company name",
-        "date": "string — e.g. Jan 2022 – Present",
-        "location": "string — City, Country or Remote",
-        "description": "string — optional one-liner (leave empty if using details)",
-        "details": ["string array — bullet points, max 3-4 per role"]
-      }]
+      "items": [
+        {
+          "title": "Job Title",
+          "subtitle": "Company Name",
+          "date": "Mon YYYY – Mon YYYY or Present",
+          "location": "City, Country or Remote",
+          "description": "",
+          "details": [
+            "3-4 bullet points per role MAX. Each must: start with a strong past-tense action verb, include a concrete metric or outcome, be 1-2 lines. NO generic duties."
+          ]
+        }
+      ]
     },
     {
       "id": "projects",
       "title": "Projects",
       "type": "projects",
-      "items": [{
-        "title": "string — project name",
-        "subtitle": "string — URL or github link",
-        "date": "string — year",
-        "location": "",
-        "description": "string — one-sentence description",
-        "details": ["string array — bullet points"]
-      }]
+      "items": [
+        {
+          "title": "Project Name",
+          "subtitle": "github.com/... or live URL",
+          "date": "YYYY",
+          "location": "",
+          "description": "One-line description with tech stack and scale/impact.",
+          "details": ["Optional: 1-2 bullets for standout technical decisions or metrics"]
+        }
+      ]
     },
     {
       "id": "education",
       "title": "Education",
       "type": "education",
-      "items": [{
-        "title": "string — degree name",
-        "subtitle": "string — university/institution",
-        "date": "string — year range",
-        "location": "string",
-        "description": "",
-        "details": []
-      }]
+      "items": [
+        {
+          "title": "Degree Name",
+          "subtitle": "University Name",
+          "date": "YYYY – YYYY",
+          "location": "City, Country",
+          "description": "",
+          "details": []
+        }
+      ]
     },
     {
       "id": "languages",
       "title": "Languages",
       "type": "languages",
-      "items": [{ "name": "string", "level": "Native | Fluent | Conversational | Basic" }]
+      "items": [
+        { "name": "English", "level": "Native" }
+      ]
     }
   ]
 }`;
 
-		const prompt = `You are a world-class CV writer and ATS optimization expert. Your job is to produce the best possible CV in a specific JSON format for a web-based CV builder.
+		const prompt = `You are a senior technical recruiter and elite CV writer. Your output gets candidates interviews at top-tier companies. You produce CVs that are tight, honest, metric-driven, and ATS-optimised — zero fluff, zero AI slop.
 
-## MODES
+## YOUR TASK
+Produce the best possible CV as a JSON object matching the schema below.
 
-**Mode A — Interview Mode**
-If the user says "ask me questions" or hasn't provided their info yet, interview them step by step. Ask about:
-1. Target role and job description (paste it if they have one)
-2. Work experience (company, title, dates, key achievements with metrics)
-3. Technical skills and tools
-4. Side projects and open-source work
-5. Education and languages
-After gathering all info, produce the final JSON.
+## TWO MODES
 
-**Mode B — Optimization Mode**
-If the user pastes their existing CV, LinkedIn profile, raw notes, or a job description — analyze everything and produce a fully tailored, ATS-optimized JSON. If a job description is provided, weave relevant keywords naturally into the bullet points and skills section.
+**Mode A — Interview:** If the user says "ask me questions", interview them step by step:
+1. Target role + job description (have them paste it)
+2. Each work experience: company, title, dates, the actual work done, any metrics you can extract (%, $, users, time, team size)
+3. Side projects and open-source
+4. Skills (only what they genuinely know)
+5. Education + languages
+After all info is gathered, output the final JSON.
+
+**Mode B — Optimize:** If the user pastes a CV, resume, LinkedIn dump, or job description — analyse it all and produce a polished, ATS-optimised JSON. If a job description is provided, mirror its exact keywords and phrases in the skills section and naturally in bullet points. Do not invent experience — only reframe and sharpen what exists.
 
 ## JSON SCHEMA
 ${schema}
 
-## WRITING RULES
-- Bullet points must start with a strong past-tense action verb (Built, Led, Reduced, Shipped, Architected, Drove, Increased, Automated, Migrated, Designed, etc.)
-- Every bullet should ideally include a metric or concrete outcome (%, $, users, time saved, team size)
-- Keep each bullet to 1–2 lines max — tight and impactful
-- Summary: 2–4 sentences, no "I" / "my", tailored to the target role
-- Skills: group logically (Frontend, Backend, Tools, Cloud, etc.) — only include skills the person actually has
-- Section order should be: skills → experience → projects → education → languages
-- Only include sections that have real, non-empty content
-- Links: short display form without "https://" (e.g. "github.com/username")
-- Dates: consistent format e.g. "Jan 2022 – Present" or "2020 – 2022"
+## HARD RULES FOR BULLET POINTS
+- Every bullet starts with a strong PAST-TENSE action verb: Built, Led, Reduced, Increased, Shipped, Architected, Migrated, Automated, Designed, Owned, Drove, Launched, Refactored, Scaled, Integrated
+- Every bullet includes at least one concrete number, %, $, or user count where possible
+- Maximum 3-4 bullets per role — only the highest-impact ones
+- No bullet longer than 2 lines
+- BANNED phrases: "responsible for", "worked on", "helped with", "assisted in", "passionate about", "team player", "fast learner", "detail-oriented", "leverage", "utilize", "dynamic", "synergy"
+
+## HARD RULES FOR SUMMARY
+- 2-3 sentences maximum
+- No "I" / "my" / "me"
+- No "passionate", "motivated", "results-driven", "dynamic"
+- Structure: [Role] with [X years] of [specific expertise]. [Strongest concrete achievement or specialisation]. [What they bring to the target role — specific, not generic.]
+
+## ATS RULES
+- Section titles must be standard: "Work Experience", "Technical Skills", "Education", "Projects", "Languages"
+- Skills: only include what the candidate genuinely knows. Group into 3-4 logical categories.
+- Links: short display URLs without "https://" (e.g. "github.com/username")
+- Dates: consistent format e.g. "Jan 2022 – Present"
 
 ## OUTPUT FORMAT
-Return ONLY the raw JSON object. No markdown code fences. No explanation. No commentary. Just the JSON, starting with { and ending with }.
+Return ONLY the raw JSON object. No markdown. No \`\`\`json. No explanation. No commentary before or after. Start with { and end with }.
 
 ---
-Ready. Paste your CV / job description, or type "ask me questions" to begin.`;
+Ready. Paste your info, existing CV, or job description — or say "ask me questions" to start the interview.`;
 
 		try {
 			await navigator.clipboard.writeText(prompt);
-			copied = true;
-			setTimeout(() => (copied = false), 2000);
 		} catch {
-			// fallback for older browsers
 			const ta = document.createElement('textarea');
 			ta.value = prompt;
-			ta.style.position = 'fixed';
-			ta.style.opacity = '0';
+			Object.assign(ta.style, { position: 'fixed', opacity: '0', top: '0', left: '0' });
 			document.body.appendChild(ta);
 			ta.select();
 			document.execCommand('copy');
 			document.body.removeChild(ta);
-			copied = true;
-			setTimeout(() => (copied = false), 2000);
 		}
+		copied = true;
+		setTimeout(() => (copied = false), 2200);
 	}
 </script>
 
 <!-- ─── Toolbar ──────────────────────────────────────────────────────────────── -->
-<div class="no-print sticky top-0 z-50 flex flex-wrap items-center gap-2 border-b border-neutral-200 bg-white px-4 py-2.5">
+<div class="no-print sticky top-0 z-50 flex flex-wrap items-center gap-2 border-b border-neutral-200 bg-white px-4 py-2.5 shadow-sm">
+	<span class="mr-1 text-xs font-semibold text-neutral-400 tracking-wide">CV BUILDER</span>
+	<div class="h-4 w-px bg-neutral-200 mx-1"></div>
+
 	<button
 		onclick={() => (showEditor = !showEditor)}
 		class="rounded border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-700 transition hover:bg-neutral-50"
@@ -304,18 +344,13 @@ Ready. Paste your CV / job description, or type "ask me questions" to begin.`;
 	<button
 		onclick={copyPrompt}
 		class="flex items-center gap-1.5 rounded border px-3 py-1.5 text-xs font-medium transition"
-		class:border-green-400={copied}
-		class:bg-green-50={copied}
-		class:text-green-700={copied}
-		class:border-neutral-300={!copied}
-		class:text-neutral-700={!copied}
-		class:hover:bg-neutral-50={!copied}
+		style={copied ? 'border-color:#4ade80;background:#f0fdf4;color:#15803d;' : 'border-color:#d1d5db;color:#374151;'}
 	>
 		{#if copied}
 			<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
 				<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
 			</svg>
-			Copied!
+			Prompt copied!
 		{:else}
 			<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 				<path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -326,9 +361,10 @@ Ready. Paste your CV / job description, or type "ask me questions" to begin.`;
 
 	<button
 		onclick={exportPdf}
-		class="rounded bg-neutral-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-neutral-700"
+		disabled={exporting}
+		class="rounded bg-neutral-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-neutral-700 disabled:opacity-50"
 	>
-		Export PDF
+		{exporting ? 'Exporting…' : 'Export PDF'}
 	</button>
 
 	<label class="cursor-pointer rounded border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-700 transition hover:bg-neutral-50">
@@ -337,127 +373,136 @@ Ready. Paste your CV / job description, or type "ask me questions" to begin.`;
 	</label>
 
 	{#if parseError}
-		<span class="text-xs text-red-500">{parseError}</span>
+		<span class="text-xs text-red-500 ml-1">{parseError}</span>
 	{/if}
 </div>
 
 <!-- ─── JSON Editor ───────────────────────────────────────────────────────────── -->
 {#if showEditor}
 	<div class="no-print border-b border-neutral-200 bg-neutral-50 p-4">
-		<p class="mb-2 text-xs text-neutral-400">Paste AI-generated JSON here and it renders live ↓</p>
+		<p class="mb-2 text-xs text-neutral-400">
+			1. Click <strong class="text-neutral-600">Copy AI Prompt</strong> → paste into Claude / ChatGPT →
+			get JSON back → paste here → CV renders live below.
+		</p>
 		<textarea
 			bind:value={jsonText}
 			oninput={() => applyJson()}
-			class="h-[42vh] w-full rounded border border-neutral-300 bg-white p-3 font-mono text-[11px] leading-relaxed focus:border-neutral-500 focus:outline-none"
+			class="h-[44vh] w-full rounded border border-neutral-300 bg-white p-3 font-mono text-[11px] leading-relaxed focus:border-neutral-500 focus:outline-none"
 			spellcheck="false"
 		></textarea>
 	</div>
 {/if}
 
-<!-- ─── CV Page ───────────────────────────────────────────────────────────────── -->
-<div class="flex justify-center bg-neutral-200 py-10 print:bg-white print:py-0">
+<!-- ─── Page background ───────────────────────────────────────────────────────── -->
+<div class="flex justify-center bg-neutral-300 py-10 print:bg-white print:py-0">
+	<!--
+		min-h keeps it A4-tall on screen.
+		During export, JS clamps this to exactly 297mm + overflow:hidden = single page.
+	-->
 	<div
 		id="cv-render"
-		class="w-[210mm] min-h-[297mm] bg-white print:shadow-none print:w-full"
 		style="
+			width: 210mm;
+			min-height: 297mm;
+			background: #ffffff;
 			font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-			box-shadow: 0 4px 32px rgba(0,0,0,0.12);
+			box-shadow: 0 2px 40px rgba(0,0,0,0.18);
 		"
 	>
-		<!-- Header ─────────────────────────────────────────────────── -->
-		<header style="padding: 28px 40px 22px; border-bottom: 1px solid #e5e7eb;">
-			<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
-				<!-- Name + Title -->
+		<!-- ── Header ─────────────────────────────────────────────────────────── -->
+		<div style="padding: 26px 38px 20px 38px; border-bottom: 1.5px solid #e2e8f0;">
+			<!-- Row 1: Name left, contact right -->
+			<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
 				<div>
-					<div style="font-size: 22px; font-weight: 700; color: #0f172a; letter-spacing: -0.3px; line-height: 1.2;">
+					<div style="font-size:21px; font-weight:800; color:#0f172a; letter-spacing:-0.4px; line-height:1.15;">
 						{cv.personal.fullName}
 					</div>
-					<div style="font-size: 12.5px; font-weight: 500; color: #64748b; margin-top: 3px;">
+					<div style="font-size:12px; font-weight:500; color:#64748b; margin-top:3px; letter-spacing:0.01em;">
 						{cv.personal.title}
 					</div>
 				</div>
-				<!-- Contact block -->
-				<div style="text-align: right; font-size: 10.5px; color: #64748b; line-height: 1.7; flex-shrink: 0; margin-top: 2px;">
+				<div style="text-align:right; font-size:10px; color:#64748b; line-height:1.8; flex-shrink:0; padding-top:1px;">
 					{#if cv.personal.email}<div>{cv.personal.email}</div>{/if}
 					{#if cv.personal.phone}<div>{cv.personal.phone}</div>{/if}
 					{#if cv.personal.location}<div>{cv.personal.location}</div>{/if}
 					{#each cv.personal.links as link}
-						<div style="color: #334155; font-weight: 500;">{link.label} · {link.url}</div>
+						<div style="font-weight:600; color:#334155;">{link.label} · {link.url}</div>
 					{/each}
 				</div>
 			</div>
 			<!-- Summary -->
 			{#if cv.personal.summary}
-				<p style="margin-top: 14px; font-size: 11px; line-height: 1.65; color: #475569; max-width: 148mm;">
+				<p style="margin:12px 0 0; font-size:10.5px; line-height:1.65; color:#475569; max-width:150mm;">
 					{cv.personal.summary}
 				</p>
 			{/if}
-		</header>
+		</div>
 
-		<!-- Body ────────────────────────────────────────────────────── -->
-		<main style="padding: 18px 40px 32px;">
+		<!-- ── Sections ───────────────────────────────────────────────────────── -->
+		<div style="padding: 16px 38px 28px 38px;">
 			{#each cv.sections as section, si}
-				<div style="margin-top: {si === 0 ? '0' : '16px'};">
-					<!-- Section heading -->
+				<div style="margin-top: {si === 0 ? '0' : '14px'};">
+
+					<!-- Section label -->
 					<div style="
-						font-size: 9px;
-						font-weight: 700;
+						font-size: 8.5px;
+						font-weight: 800;
 						text-transform: uppercase;
-						letter-spacing: 0.1em;
+						letter-spacing: 0.13em;
 						color: #94a3b8;
-						padding-bottom: 5px;
-						border-bottom: 1px solid #f1f5f9;
-						margin-bottom: 9px;
+						padding-bottom: 4px;
+						border-bottom: 1px solid #e2e8f0;
+						margin-bottom: 8px;
 					">
 						{section.title}
 					</div>
 
-					<!-- Skills ─────────────────────────────────── -->
+					<!-- ── Skills ──────────────────────────────────────────────── -->
 					{#if section.type === 'skills'}
-						<div style="display: flex; flex-direction: column; gap: 3px;">
+						<div style="display:flex; flex-direction:column; gap:2.5px;">
 							{#each section.items as skill}
-								<div style="display: flex; gap: 0; font-size: 11px; line-height: 1.55;">
-									<span style="width: 100px; flex-shrink: 0; font-weight: 600; color: #374151;">{skill.category}</span>
-									<span style="color: #6b7280;">{skill.values.join(', ')}</span>
+								<div style="display:flex; font-size:10.5px; line-height:1.5;">
+									<span style="width:92px; flex-shrink:0; font-weight:700; color:#1e293b;">{skill.category}</span>
+									<span style="color:#64748b;">{skill.values.join(', ')}</span>
 								</div>
 							{/each}
 						</div>
 
-					<!-- Experience / Education / Projects ───────── -->
+					<!-- ── Experience / Education / Projects ────────────────────── -->
 					{:else if section.type === 'experience' || section.type === 'education' || section.type === 'projects'}
-						<div style="display: flex; flex-direction: column; gap: 12px;">
+						<div style="display:flex; flex-direction:column; gap:10px;">
 							{#each section.items as item}
 								<div>
-									<!-- Item header row -->
-									<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
-										<div style="display: flex; align-items: baseline; gap: 0; flex-wrap: wrap; min-width: 0;">
-											<span style="font-size: 11.5px; font-weight: 700; color: #1e293b;">{item.title}</span>
+									<!-- Item title row -->
+									<div style="display:flex; justify-content:space-between; align-items:baseline; gap:8px;">
+										<div style="font-size:11px; font-weight:700; color:#0f172a; line-height:1.3;">
+											{item.title}
 											{#if item.subtitle}
-												<span style="font-size: 11px; color: #64748b; margin-left: 6px;">— {item.subtitle}</span>
+												<span style="font-weight:400; color:#64748b; margin-left:5px; font-size:10.5px;">— {item.subtitle}</span>
 											{/if}
 										</div>
-										<div style="font-size: 10.5px; color: #94a3b8; flex-shrink: 0; white-space: nowrap;">
-											{#if item.date && item.location}
-												{item.date} · {item.location}
-											{:else if item.date}
-												{item.date}
-											{:else if item.location}
-												{item.location}
-											{/if}
+										<div style="font-size:10px; color:#94a3b8; flex-shrink:0; white-space:nowrap;">
+											{[item.date, item.location].filter(Boolean).join(' · ')}
 										</div>
 									</div>
-									<!-- Description -->
+									<!-- Optional one-liner description -->
 									{#if item.description}
-										<p style="margin: 3px 0 0; font-size: 11px; color: #64748b; line-height: 1.5;">{item.description}</p>
+										<p style="margin:2px 0 0; font-size:10.5px; line-height:1.55; color:#64748b;">{item.description}</p>
 									{/if}
-									<!-- Bullet details -->
+									<!-- Bullet points — text-indent hanging indent for reliable PDF rendering -->
 									{#if item.details?.length}
-										<div style="margin-top: 4px; display: flex; flex-direction: column; gap: 2.5px;">
+										<div style="margin-top:3px; display:flex; flex-direction:column; gap:2px;">
 											{#each item.details as detail}
-												<div style="display: flex; gap: 8px; font-size: 11px; line-height: 1.55; color: #374151;">
-													<span style="flex-shrink: 0; margin-top: 5.5px; width: 3px; height: 3px; border-radius: 50%; background: #9ca3af; display: block;"></span>
-													<span>{detail}</span>
-												</div>
+												<p style="
+													margin:0;
+													font-size:10.5px;
+													line-height:1.6;
+													color:#334155;
+													padding-left:12px;
+													text-indent:-12px;
+												">
+													<span style="color:#94a3b8; font-size:10px;">–&nbsp;</span>{detail}
+												</p>
 											{/each}
 										</div>
 									{/if}
@@ -465,19 +510,20 @@ Ready. Paste your CV / job description, or type "ask me questions" to begin.`;
 							{/each}
 						</div>
 
-					<!-- Languages ───────────────────────────────── -->
+					<!-- ── Languages ─────────────────────────────────────────────── -->
 					{:else if section.type === 'languages'}
-						<div style="display: flex; gap: 24px; flex-wrap: wrap;">
+						<div style="display:flex; flex-wrap:wrap; gap:20px;">
 							{#each section.items as lang}
-								<div style="font-size: 11px;">
-									<span style="font-weight: 600; color: #374151;">{lang.name}</span>
-									<span style="color: #9ca3af; margin-left: 4px;">({lang.level})</span>
+								<div style="font-size:10.5px;">
+									<span style="font-weight:700; color:#1e293b;">{lang.name}</span>
+									<span style="color:#94a3b8; margin-left:3px;">({lang.level})</span>
 								</div>
 							{/each}
 						</div>
 					{/if}
+
 				</div>
 			{/each}
-		</main>
+		</div>
 	</div>
 </div>
